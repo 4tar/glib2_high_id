@@ -1,0 +1,120 @@
+--- a/glib-2.26.1/glib/gmain.c	2010-11-12 21:52:52.000000000 +0800
++++ a/glib-2.26.1/glib/gmain.c	2016-11-23 22:40:12.000000000 +0800
+@@ -234,6 +234,8 @@
+ 
+   gint ref_count;
+ 
++  GHashTable *sources;
++
+   GPtrArray *pending_dispatches;
+   gint timeout;			/* Timeout for current iteration */
+ 
+@@ -472,7 +474,8 @@
+       source = next;
+     }
+ 
+-#ifdef G_THREADS_ENABLED  
++  g_hash_table_destroy (context->sources);
++#ifdef G_THREADS_ENABLED
+   g_static_mutex_free (&context->mutex);
+ #endif
+ 
+@@ -584,6 +587,7 @@
+ #ifdef G_THREADS_ENABLED
+   g_static_mutex_init (&context->mutex);
+ 
++  context->sources = g_hash_table_new (NULL, NULL);
+   context->owner = NULL;
+   context->waiters = NULL;
+ 
+@@ -904,16 +908,25 @@
+ 
+   g_return_val_if_fail (source->context == NULL, 0);
+   g_return_val_if_fail (!SOURCE_DESTROYED (source), 0);
+-  
++
+   if (!context)
+     context = g_main_context_default ();
+ 
+   LOCK_CONTEXT (context);
+ 
+   source->context = context;
+-  result = source->source_id = context->next_id++;
+ 
++  /* The counter may have wrapped, so we must ensure that we do not
++   * reuse the source id of an existing source.
++   */
++  do
++    result = context->next_id++;
++  while (result == 0 || g_hash_table_lookup (context->sources, GUINT_TO_POINTER (result)));
++
++  source->source_id = result;
+   source->ref_count++;
++
++  g_hash_table_insert (context->sources, GUINT_TO_POINTER (result), source);
+   g_source_list_add (source, context);
+ 
+   tmp_list = source->poll_fds;
+@@ -1511,15 +1524,18 @@
+       source->callback_funcs = NULL;
+ 
+       if (context && !SOURCE_DESTROYED (source))
+-	{
+-	  g_warning (G_STRLOC ": ref_count == 0, but source is still attached to a context!");
+-	  source->ref_count++;
+-	}
++	    {
++          g_warning (G_STRLOC ": ref_count == 0, but source is still attached to a context!");
++          source->ref_count++;
++        }
+       else if (context)
+-	g_source_list_remove (source, context);
++        {
++          g_source_list_remove (source, context);
++          g_hash_table_remove (context->sources, GUINT_TO_POINTER (source->source_id));
++        }
+ 
+       if (source->source_funcs->finalize)
+-	source->source_funcs->finalize (source);
++        source->source_funcs->finalize (source);
+ 
+       g_free (source->name);
+       source->name = NULL;
+@@ -1535,12 +1551,12 @@
+   if (old_cb_funcs)
+     {
+       if (have_lock)
+-	UNLOCK_CONTEXT (context);
++        UNLOCK_CONTEXT (context);
+       
+       old_cb_funcs->unref (old_cb_data);
+ 
+       if (have_lock)
+-	LOCK_CONTEXT (context);
++        LOCK_CONTEXT (context);
+     }
+ }
+ 
+@@ -1581,18 +1597,12 @@
+     context = g_main_context_default ();
+   
+   LOCK_CONTEXT (context);
+-  
+-  source = context->source_list;
+-  while (source)
+-    {
+-      if (!SOURCE_DESTROYED (source) &&
+-	  source->source_id == source_id)
+-	break;
+-      source = source->next;
+-    }
+-
++  source = g_hash_table_lookup (context->sources, GUINT_TO_POINTER (source_id));
+   UNLOCK_CONTEXT (context);
+ 
++  if (source && SOURCE_DESTROYED (source))
++    source = NULL;
++
+   return source;
+ }
+ 
