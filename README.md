@@ -11,21 +11,21 @@ Description 描述
 ================
 
 * glib2-2.26.1-3.el6-source-id-overflow.patch
-  ** The patch which fixes the glib2 source id overflow issue.
-  ** glib2事件源id溢出bug的patch文件。
+  * The patch which fixes the glib2 source id overflow issue.
+  * glib2事件源id溢出bug的patch文件。
 
 * replace_glib2.sh
-  ** A wrap shell script to udpate target glib2 library, it checks the system glib2 version to avoid possible error.
-  ** 用于替换系统现有glib2库文件的脚本，其中会检查系统glib2版本以避免潜在的风险。
+  * A wrap shell script to udpate target glib2 library, it checks the system glib2 version to avoid possible error.
+  * 用于替换系统现有glib2库文件的脚本，其中会检查系统glib2版本以避免潜在的风险。
 
 * glib2_id.c
-  ** The tool which can 1) scan the target process memory for glib2 IO event loop next id value and all source id value; 2) set the glib2 IO event loop next id to user specified value.
-  ** 该工具提供如下功能：1) 扫描目标进程中glib2维护的全部事件循环中的源id值；2) 设置glib2维护的时间循环下一源id值。
+  * The tool which can 1) scan the target process memory for glib2 IO event loop next id value and all source id value; 2) set the glib2 IO event loop next id to user specified value.
+  * 该工具提供如下功能：1) 扫描目标进程中glib2维护的全部事件循环中的源id值；2) 设置glib2维护的时间循环下一源id值。
 
 * scan_qemu_glib2_id.sh
-  ** A wrap shell script which leverages the above tool to scan and report glib2 IO event next id value and all source id value in all or specified KVM host process.
-  ** 用于扫描宿主机上全部或指定KVM对应qemu-kvm进程的glib2事件循环下一源id值及全部事件源id值的脚本。
+  * A wrap shell script which leverages the above tool to scan and report glib2 IO event next id value and all source id value in all or specified KVM host process.
+  * 用于扫描宿主机上全部或指定KVM对应qemu-kvm进程的glib2事件循环下一源id值及全部事件源id值的脚本。
 
 * adjust_qemu_glib2_id.sh
-  ** A wrap shell script which leverages the above tool to adjust glib2 IO event next id value in all or specified KVM host process.
-  ** 用于调整宿主机上全部或指定KVM对应进程的glib2事件循环下一源id值的脚本。
+  * A wrap shell script which leverages the above tool to adjust glib2 IO event next id value in all or specified KVM host process.
+  * 用于调整宿主机上全部或指定KVM对应进程的glib2事件循环下一源id值的脚本。
